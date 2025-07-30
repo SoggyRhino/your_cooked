@@ -60,19 +60,19 @@ class _RegisterFormState extends State<RegisterForm> {
       _isLoading = false;
     });
 
-    if (context.mounted) {
-      if (result.isSuccess()) {
-        context.replaceNamed('profile-username');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              result.exceptionOrNull()?.toString() ?? 'Unknown error',
-            ),
-            backgroundColor: Colors.red,
+    if (!context.mounted) return;
+
+    if (result.isSuccess()) {
+      context.replaceNamed('profile-username');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.exceptionOrNull()?.toString() ?? 'Unknown error',
           ),
-        );
-      }
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

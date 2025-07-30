@@ -29,7 +29,7 @@ class _ViewQuestionPageState extends State<ViewQuestionPage> {
   }
 
   Future<void> update() async {
-    final result = await FirestoreService().updateHistory(
+    final _ = await FirestoreService().updateHistory(
       userId,
       widget.questionId,
     );

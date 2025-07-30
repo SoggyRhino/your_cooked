@@ -1,9 +1,11 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:your_cooked/services/auth/auth_service.dart';
 import 'package:your_cooked/services/profile/profile_service.dart';
 
 import '../../../models/user.dart';
-import 'package:your_cooked/services/auth/auth_service.dart';
 import '../../../services/firestore/firestore_service.dart';
 
 class UsernamePage extends StatefulWidget {

@@ -4,12 +4,12 @@ import 'dart:typed_data';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:result_dart/result_dart.dart';
-import 'package:your_cooked/services/ai/instructions.dart';
 import 'package:your_cooked/services/ai/functions.dart';
+import 'package:your_cooked/services/ai/instructions.dart';
 
 import '../../models/answer.dart';
-import '../../models/question.dart';
 import '../../models/grading.dart';
+import '../../models/question.dart';
 
 class AiService {
   AiService._();
@@ -65,7 +65,6 @@ class AiService {
 
       final List<dynamic> decodedList = jsonDecode(response.text ?? '[]');
 
-      // 2. Map over the list, ensuring each element is treated as a Map.
       final categories = decodedList
           .map((element) => Category.fromJson(element as Map<String, dynamic>))
           .toList();
