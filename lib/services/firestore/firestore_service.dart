@@ -86,15 +86,32 @@ class FirestoreService {
   }
 
   //todo add pagination
-  Future<Result<List<Question>>> getQuestions(String userId) async {
+  Future<Result<(List<Question>, DocumentSnapshot?)>> getQuestions({
+    required String userId,
+    DocumentSnapshot? lastDoc,
+    int limit = 20,
+  }) async {
     try {
-      final querySnapshot = await _questionsReference
+      var query = _questionsReference
           .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
+          .orderBy('createdAt', descending: true);
+
+      if (lastDoc != null) {
+        query = query.startAfterDocument(lastDoc);
+      }
+
+      final querySnapshot = await query
+          .limit(limit)
           .get()
           .timeout(_fireStoreTimeout);
 
-      return querySnapshot.docs.map((doc) => doc.data()).toList().toSuccess();
+      final questionList = querySnapshot.docs.map((doc) => doc.data()).toList();
+
+      final nextCursor = querySnapshot.docs.isNotEmpty
+          ? querySnapshot.docs.last
+          : null;
+
+      return (questionList, nextCursor).toSuccess();
     } on TimeoutException {
       return const FirestoreTimeoutError().toFailure();
     } catch (e) {
@@ -102,6 +119,7 @@ class FirestoreService {
     }
   }
 
+  //todo think of a better way to manage users questions
   Future<Result<Question>> getQuestion(String questionId) async {
     try {
       final querySnapshot = await _questionsReference
@@ -134,25 +152,29 @@ class FirestoreService {
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
-  Future<Result<bool>> updateHistory(String userId, String questionId) async {
-    final history = History(id: questionId, timeStamp: DateTime.now());
+  Future<Result<bool>> updateHistory(String userId,
+      String questionId,
+      String questionText,) async {
+    final history = History(
+      questionId: questionId,
+      questionText: questionText,
+      timeStamp: DateTime.now(),
+    );
 
     try {
-      final user = await getUser(userId);
-
-      if (user.isError()) {
-        return user.exceptionOrNull()!.toFailure();
-      }
-      final historyReference = getHistoryReference(user.getOrThrow().docId!);
-
-      final result = await historyReference
+      final result = await getHistoryReference(userId)
           .where('questionId', isEqualTo: questionId)
-          .get();
+          .get()
+          .timeout(_fireStoreTimeout);
 
       if (result.docs.isNotEmpty) {
-        await result.docs.first.reference.update(history.toFirestore());
+        await result.docs.first.reference
+            .update(history.toFirestore())
+            .timeout(_fireStoreTimeout);
       } else {
-        await getHistoryReference(user.getOrThrow().docId!).add(history);
+        await getHistoryReference(
+          userId,
+        ).add(history).timeout(_fireStoreTimeout);
       }
 
       return true.toSuccess();
@@ -169,14 +191,8 @@ class FirestoreService {
     DocumentSnapshot? lastDoc,
   }) async {
     try {
-      final user = await getUser(userId);
-
-      if (user.isError()) {
-        return user.exceptionOrNull()!.toFailure();
-      }
-
       var query = getHistoryReference(
-        user.getOrThrow().docId!,
+        userId,
       ).orderBy('timeStamp', descending: true);
 
       if (lastDoc != null) {
@@ -202,21 +218,23 @@ class FirestoreService {
     }
   }
 
-  Stream<List<History>> streamHistory(User user, {int limit = 20}) {
-    return getHistoryReference(user.docId!)
+  Stream<List<History>> streamHistory(
+      {required String userId, int limit = 20}) {
+    return getHistoryReference(userId)
         .orderBy('timeStamp', descending: true)
         .limit(limit)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
-  Future<Result<String>> createUser(User user) async {
+  Future<Result<bool>> createUser(User user) async {
     try {
-      final snapshot = await _userReference
-          .add(user)
+      await _userReference
+          .doc(user.userId)
+          .set(user)
           .timeout(_fireStoreTimeout);
 
-      return Success(snapshot.id);
+      return Success(true);
     } on TimeoutException {
       return const FirestoreTimeoutError().toFailure();
     } catch (e) {
@@ -227,16 +245,15 @@ class FirestoreService {
   Future<Result<User>> getUser(String userId) async {
     try {
       final snapshot = await _userReference
-          .where('userId', isEqualTo: userId)
-          .limit(1)
+          .doc(userId)
           .get()
           .timeout(_fireStoreTimeout);
 
-      if (snapshot.docs.isEmpty) {
+      if (snapshot.data() == null) {
         return FirestoreError.missingUser().toFailure();
       }
 
-      return snapshot.docs.first.data().toSuccess();
+      return snapshot.data()!.toSuccess();
     } on TimeoutException {
       return const FirestoreTimeoutError().toFailure();
     } catch (e) {

@@ -73,8 +73,11 @@ class DefaultFirebaseOptions {
     projectId: 'your-cooked',
     databaseURL: 'https://your-cooked-default-rtdb.firebaseio.com',
     storageBucket: 'your-cooked.firebasestorage.app',
+    androidClientId:
+        '661306578439-hor1tun817gqp5imc7c860af3pesajbv.apps.googleusercontent.com',
     iosClientId:
         '661306578439-4fjooq13qmld1u9f1k4ng8p9mraibc6m.apps.googleusercontent.com',
     iosBundleId: 'com.example.yourCooked',
   );
+
 }

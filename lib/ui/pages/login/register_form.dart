@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:your_cooked/services/auth/auth_service.dart';
+import 'package:your_cooked/utils/validators.dart';
+
+import '../../../services/profile/profile_service.dart';
 
 enum _RegisterType { email, google }
 
@@ -15,7 +18,6 @@ class RegisterForm extends StatefulWidget {
 }
 
 class _RegisterFormState extends State<RegisterForm> {
-  static final emailReg = RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$');
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -56,13 +58,13 @@ class _RegisterFormState extends State<RegisterForm> {
       _isLoading = false;
     });
 
-    setState(() {
-      _isLoading = false;
-    });
-
     if (!context.mounted) return;
 
     if (result.isSuccess()) {
+      await ProfileService().profileStateStream.firstWhere(
+            (profileState) => profileState != ProfileState.loading,
+      );
+
       context.replaceNamed('profile-username');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -121,14 +123,7 @@ class _RegisterFormState extends State<RegisterForm> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Email cannot be empty';
-                  } else if (!emailReg.hasMatch(value)) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
+                  validator: isValidEmail
               ),
               const Gap(16),
 
@@ -156,12 +151,7 @@ class _RegisterFormState extends State<RegisterForm> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password cannot be empty';
-                  }
-                  return null;
-                },
+                validator: isStrongPassword,
               ),
 
               const Gap(24),

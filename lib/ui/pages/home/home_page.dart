@@ -76,39 +76,17 @@ class _HomePageState extends State<HomePage>
         GradingsChart(
           gradings: FirestoreService().streamUserGradings(userId: userId),
         ),
-        _buildHistory(),
-        QuestionCarousel(
+        QuestionCarousel.fromHistory(
+          label: "Recent Questions",
+          historyStream: FirestoreService().streamHistory(userId: userId),
+        ),
+        //todo fix carousel for user questions
+        QuestionCarousel.fromQuestions(
           label: "Your Questions",
-          stream: FirestoreService().getQuestionsStream(userId: userId),
+          questionsStream: FirestoreService().getQuestionsStream(
+              userId: userId),
         ),
       ],
-    );
-  }
-
-  Widget _buildHistory() {
-    return FutureBuilder(
-      future: FirestoreService().getUser(
-        AuthenticationService().currentUser!.uid,
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-
-        final user = snapshot.data!;
-
-        if (user.isError()) {
-          return Center(child: Text(user.exceptionOrNull().toString()));
-        }
-
-        return QuestionCarousel.fromHistory(
-          label: "Recent Questions",
-          historyStream: FirestoreService().streamHistory(user.getOrThrow()),
-        );
-      },
     );
   }
 }

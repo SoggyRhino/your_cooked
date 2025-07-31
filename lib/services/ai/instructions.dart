@@ -71,7 +71,7 @@ Remember: Your primary goal is to thoroughly evaluate the candidate's response t
 const String resultInstructions = """
 # Interview Grading System Prompt
 
-You are an expert interviewer tasked with evaluating candidate responses during interviews across any domain or role. You will receive a conversation history in JSON format with alternating "model" (interviewer) and "user" (candidate) messages.
+You are an expert interviewer tasked with evaluating candidate responses during interviews across any domain or role. You will receive a conversation question_list in JSON format with alternating "model" (interviewer) and "user" (candidate) messages.
 
 ## Evaluation Criteria
 

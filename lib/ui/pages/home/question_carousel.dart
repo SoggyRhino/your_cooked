@@ -1,48 +1,47 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:your_cooked/services/firestore/firestore_service.dart';
-import 'package:your_cooked/ui/pages/home/question_card.dart';
+import 'package:go_router/go_router.dart';
+import 'package:your_cooked/ui/commons/question_card.dart';
+import 'package:your_cooked/utils/transformers.dart';
 
 import '../../../models/history.dart';
 import '../../../models/question.dart';
+import '../../../models/question_preview.dart';
 
 //todo fix stream
 class QuestionCarousel extends StatelessWidget {
   final String label;
-  final Stream<List<Question>> stream;
+  final Stream<List<QuestionPreview>> stream;
+  final String viewMoreLink;
 
   const QuestionCarousel({
     super.key,
     required this.label,
     required this.stream,
+    required this.viewMoreLink,
   });
 
   factory QuestionCarousel.fromHistory({
     required String label,
     required Stream<List<History>> historyStream,
   }) {
-    final transformer =
-        StreamTransformer<List<History>, List<Question>>.fromHandlers(
-          handleData: (historyList, sink) async {
-            final questionFutures = historyList
-                .map((history) => history.id)
-                .toSet()
-                .map((id) => FirestoreService().getQuestion(id));
+    return QuestionCarousel(
+      label: label,
+      stream: historyStream.transform(historyToPreviewTransformer),
+      viewMoreLink: 'view-history',
+    );
+  }
 
-            final questions = await Future.wait(questionFutures);
-
-            sink.add(
-              questions
-                  .where((result) => result.isSuccess())
-                  .map((result) => result.getOrThrow())
-                  .toList(),
-            );
-          },
-        );
-
-    final stream = historyStream.transform(transformer);
-    return QuestionCarousel(label: label, stream: stream);
+  factory QuestionCarousel.fromQuestions({
+    required String label,
+    required Stream<List<Question>> questionsStream,
+  }) {
+    return QuestionCarousel(
+      label: label,
+      stream: questionsStream.transform(questionsToPreviewTransformer),
+      viewMoreLink: 'view-my-questions',
+    );
   }
 
   @override
@@ -56,15 +55,42 @@ class QuestionCarousel extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
 
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ), // Slightly larger and bolder
+            child: Row(
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ), // Slightly larger and bolder
+                ),
+                Expanded(child: Container()),
+                TextButton(
+                  onPressed: () {
+                    context.pushNamed(viewMoreLink);
+                  },
+                  child: Row(
+                    children: [
+                      Text(
+                        'View All',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8.0),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: Theme.of(context).textTheme.bodyMedium?.fontSize,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16.0),
+              ],
             ),
           ),
           const SizedBox(height: 12.0),
-          StreamBuilder<List<Question>>(
+          StreamBuilder<List<QuestionPreview>>(
             stream: stream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -72,6 +98,7 @@ class QuestionCarousel extends StatelessWidget {
                   child: CircularProgressIndicator(),
                 ); // Centered loader
               } else if (snapshot.hasError) {
+                print('Error: ${snapshot.error}');
                 return SizedBox(
                   height: 120,
                   child: Center(
@@ -106,7 +133,10 @@ class QuestionCarousel extends StatelessWidget {
                           right: 8.0,
                         ),
                         // Consistent spacing
-                        child: QuestionCard(question: snapshot.data![index]),
+                        child: QuestionCard(
+                          questionId: snapshot.data![index].questionId,
+                          questionText: snapshot.data![index].questionText,
+                        ),
                       );
                     },
                   ),

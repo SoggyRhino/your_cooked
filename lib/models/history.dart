@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class History {
-  final String id;
+  final String questionId;
+  final String questionText;
   final DateTime timeStamp;
 
-  History({required this.id, required this.timeStamp});
+  History(
+      {required this.questionId, required this.questionText, required this.timeStamp});
 
   factory History.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> snapshot,
@@ -15,12 +17,18 @@ class History {
       throw Exception('History data cannot be null');
     }
     return History(
-      id: data['questionId'],
+      questionId: data['questionId'],
+      questionText: data['questionText'],
       timeStamp: data['timeStamp'].toDate(),
     );
   }
 
   Map<String, dynamic> toFirestore() {
-    return {'questionId': id, 'timeStamp': timeStamp};
+    return {
+      'questionId': questionId,
+
+      'questionText': questionText,
+      'timeStamp': timeStamp,
+    };
   }
 }

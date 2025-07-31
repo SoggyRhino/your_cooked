@@ -3,6 +3,9 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:your_cooked/services/auth/auth_service.dart';
 
+import '../../../services/profile/profile_service.dart';
+import '../../../utils/validators.dart';
+
 enum _LoginType { email, google }
 
 class LoginForm extends StatefulWidget {
@@ -15,7 +18,6 @@ class LoginForm extends StatefulWidget {
 }
 
 class _LoginFormState extends State<LoginForm> {
-  static final emailReg = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -49,19 +51,24 @@ class _LoginFormState extends State<LoginForm> {
       _isLoading = false;
     });
 
-    if (context.mounted) {
-      if (result.isSuccess()) {
-        context.replaceNamed('home');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              result.exceptionOrNull()?.toString() ?? 'Unknown error',
-            ),
-            backgroundColor: Colors.red,
+    if (!context.mounted) return;
+
+
+    if (result.isSuccess()) {
+      await ProfileService().profileStateStream.firstWhere(
+            (profileState) => profileState != ProfileState.loading,
+      );
+
+      context.replaceNamed('home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.exceptionOrNull()?.toString() ?? 'Unknown error',
           ),
-        );
-      }
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -117,14 +124,7 @@ class _LoginFormState extends State<LoginForm> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Email cannot be empty';
-                  } else if (!emailReg.hasMatch(value)) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
+                  validator: isValidEmail
               ),
               const Gap(16),
 
@@ -152,12 +152,7 @@ class _LoginFormState extends State<LoginForm> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password cannot be empty';
-                  }
-                  return null;
-                },
+                  validator: isStrongPassword
               ),
 
               // Forgot Password

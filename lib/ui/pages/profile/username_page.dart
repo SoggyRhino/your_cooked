@@ -18,9 +18,19 @@ class UsernamePage extends StatefulWidget {
 }
 
 class _UsernamePageState extends State<UsernamePage> {
+  late final String userId;
+  late final String? displayName;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    userId = AuthenticationService().currentUser!.uid;
+    displayName = AuthenticationService().currentUser!.displayName;
+    _usernameController.text = displayName ?? '';
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,31 +50,59 @@ class _UsernamePageState extends State<UsernamePage> {
   }
 
   Widget _buildForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          Text(widget.isNewUser ? 'Create Username' : 'Update Username'),
-          TextFormField(
-            controller: _usernameController,
-            decoration: const InputDecoration(
-              hintText: "Enter your username",
-              labelText: "Username",
-              prefixIcon: Icon(Icons.person_outline),
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Username cannot be empty';
-              }
-              if (value.length < 3) {
-                return 'Username must be at least 3 characters';
-              }
-              return null;
-            },
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Text(
+                widget.isNewUser ? 'Create Username' : 'Update Username',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              TextFormField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  hintText: "Enter your username",
+                  labelText: "Username",
+                  prefixIcon: Icon(Icons.person_outline),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Username cannot be empty';
+                  }
+                  if (value.length < 3) {
+                    return 'Username must be at least 3 characters';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+
+              ElevatedButton(
+                onPressed: _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Set UserName'),
+              ),
+            ],
           ),
-          ElevatedButton(onPressed: _submit, child: const Text('Submit')),
-        ],
+        ),
       ),
     );
   }
@@ -81,7 +119,6 @@ class _UsernamePageState extends State<UsernamePage> {
       final User user = User(
         userId: AuthenticationService().currentUser!.uid,
         userName: _usernameController.text,
-        questions: [],
         joined: DateTime.now(),
       );
 

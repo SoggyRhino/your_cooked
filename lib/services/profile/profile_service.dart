@@ -72,7 +72,8 @@ class ProfileService {
       } else {
         final exception = result.exceptionOrNull();
 
-        if (exception is FirestoreError && exception.code == 'not-found') {
+        if (exception is FirestoreError &&
+            exception.code == FirestoreError.missingUser().code) {
           _updateState(ProfileState.setup);
         } else {
           print('Profile service error: $exception');

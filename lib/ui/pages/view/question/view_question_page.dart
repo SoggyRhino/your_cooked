@@ -6,6 +6,7 @@ import 'package:your_cooked/ui/pages/view/question/quetion_answer_card.dart';
 import 'package:your_cooked/ui/pages/view/question/results_list.dart';
 import 'package:your_cooked/ui/pages/view/question/tag_list.dart';
 
+import '../../../../models/question.dart';
 import '../../../../services/auth/auth_service.dart';
 import '../../../../services/firestore/firestore_service.dart';
 
@@ -25,13 +26,13 @@ class _ViewQuestionPageState extends State<ViewQuestionPage> {
   void initState() {
     super.initState();
     userId = AuthenticationService().currentUser!.uid;
-    update();
   }
 
-  Future<void> update() async {
+  Future<void> updateHistory(Question question) async {
     final _ = await FirestoreService().updateHistory(
       userId,
-      widget.questionId,
+      question.docId!,
+      question.questionText,
     );
   }
 
@@ -54,6 +55,7 @@ class _ViewQuestionPageState extends State<ViewQuestionPage> {
                   result.exceptionOrNull()?.toString() ?? 'Unknown error';
             } else {
               final question = result.getOrThrow();
+              updateHistory(question);
 
               return Scaffold(
                 appBar: AppBar(),

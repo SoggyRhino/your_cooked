@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:textfield_tags/textfield_tags.dart';
 import 'package:your_cooked/models/question.dart';
 import 'package:your_cooked/services/auth/auth_service.dart';
+import 'package:your_cooked/ui/commons/confirm_leave.dart';
 import 'package:your_cooked/ui/pages/create/tag_form_field.dart';
 
 import '../../../services/firestore/firestore_service.dart';
@@ -16,6 +17,8 @@ class CreateQuestionPage extends StatefulWidget {
 }
 
 class _CreateQuestionPageState extends State<CreateQuestionPage> {
+  late final String userId;
+
   //form state
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _questionController = TextEditingController();
@@ -28,6 +31,12 @@ class _CreateQuestionPageState extends State<CreateQuestionPage> {
   DateTime? lastPop;
 
   @override
+  void initState() {
+    userId = AuthenticationService().currentUser!.uid;
+    super.initState();
+  }
+
+  @override
   void dispose() {
     _questionController.dispose();
     _tagController.dispose();
@@ -35,72 +44,14 @@ class _CreateQuestionPageState extends State<CreateQuestionPage> {
     super.dispose();
   }
 
-  Future<void> _saveQuestion() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      final user = AuthenticationService().currentUser;
-      if (user == null) {
-        context.goNamed('login');
-        return;
-      }
-
-      final result = await FirestoreService().createQuestion(
-        Question(
-          questionText: _questionController.text,
-          answerText: _answerController.text,
-          tags: _tagController.getTags ?? [],
-          visibility: _private ? 'private' : 'public',
-          createdAt: DateTime.now(),
-          userId: user.uid,
-        ),
-      );
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (!context.mounted) return;
-
-      if (result.isSuccess()) {
-        context.pop();
-      } else {
-        final exception = result.exceptionOrNull();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save question: $exception'),
-            backgroundColor: Theme.of(context).colorScheme.errorContainer,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, object) {
-        if (didPop) return;
-
-        DateTime now = DateTime.now();
-
-        if (lastPop == null ||
-            now.difference(lastPop!) > const Duration(seconds: 3)) {
-          lastPop = now;
-          _confirmLeave();
-        } else {
-          if (context.mounted) {
-            context.pop();
-          }
-        }
-      },
+    return ConfirmLeaveScope(
+      title: 'Are you sure you want to leave?',
+      content: 'Your answers will not be saved',
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Create Question'),
@@ -249,21 +200,9 @@ class _CreateQuestionPageState extends State<CreateQuestionPage> {
     );
   }
 
-  //todo remove cancel ?
   Row _buildActionRow() {
     return Row(
       children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: () => _confirmLeave(),
-
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            child: const Text('Cancel'),
-          ),
-        ),
-        const SizedBox(width: 12),
         Expanded(
           flex: 2,
           child: ElevatedButton(
@@ -284,31 +223,43 @@ class _CreateQuestionPageState extends State<CreateQuestionPage> {
     );
   }
 
-  void _confirmLeave() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // This AlertDialog will be styled by the theme automatically.
-        return AlertDialog(
-          title: const Text('Are you sure you want to leave?'),
-          content: const Text('Your changes will be lost.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                if (context.mounted) {
-                  context.pop(); // Leave page
-                }
-              },
-              child: const Text('Leave'),
-            ),
-          ],
-        );
-      },
+  Future<void> _saveQuestion() async {
+    if (_isLoading) return;
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final result = await FirestoreService().createQuestion(
+      Question(
+        questionText: _questionController.text,
+        answerText: _answerController.text,
+        tags: _tagController.getTags ?? <String>[],
+        visibility: _private ? 'private' : 'public',
+        createdAt: DateTime.now(),
+        userId: userId,
+      ),
     );
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (!context.mounted) return;
+
+    if (result.isSuccess()) {
+      context.pop();
+    } else {
+      final exception = result.exceptionOrNull();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save question: $exception'),
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }

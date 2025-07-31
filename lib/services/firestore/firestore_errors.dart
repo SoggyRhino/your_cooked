@@ -7,6 +7,7 @@ class FirestoreError implements Exception {
   const FirestoreError(this.message, this.code);
 
   factory FirestoreError.fromFirebaseError(dynamic error) {
+    print(error);
     if (error is FirebaseException) {
       switch (error.code) {
         case 'permission-denied':

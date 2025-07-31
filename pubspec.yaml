@@ -38,6 +38,7 @@ dependencies:
 
   riverpod: ^2.6.1
   flutter_riverpod: ^2.6.1
+  firebase_app_check: ^0.4.0
 
 dev_dependencies:
   flutter_test:
@@ -47,6 +48,9 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.4.11
   riverpod_generator: ^2.6.5
+
+
+  mockito: ^5.4.0
 
 flutter:
   uses-material-design: true

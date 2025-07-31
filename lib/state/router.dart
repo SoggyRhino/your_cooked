@@ -10,6 +10,7 @@ import 'package:your_cooked/ui/pages/login/login_page.dart';
 import 'package:your_cooked/ui/pages/profile/username_page.dart';
 import 'package:your_cooked/ui/pages/view/grading/view_grading_page.dart';
 import 'package:your_cooked/ui/pages/view/question/view_question_page.dart';
+import 'package:your_cooked/ui/pages/view/question_list/view_question_list_page.dart';
 
 import '../services/auth/auth_service.dart';
 import '../services/profile/profile_service.dart';
@@ -88,11 +89,24 @@ final router = GoRouter(
       builder: (context, state) => const CreateQuestionPage(),
     ),
     GoRoute(
+      path: '/view/history',
+      name: 'view-history',
+      builder: (context, state) {
+        return ViewQuestionListPage.history();
+      },
+    ),
+    GoRoute(
+      path: '/view/my-questions',
+      name: 'view-my-questions',
+      builder: (context, state) {
+        return ViewQuestionListPage.questions();
+      },
+    ),
+    GoRoute(
       path: '/view/question/:questionId',
       name: 'view-question',
       builder: (context, state) {
-        final questionId =
-            state.pathParameters['questionId'] ?? 'Missing question Id';
+        final questionId = state.pathParameters['questionId']!;
 
         return ViewQuestionPage(questionId: questionId);
       },
@@ -100,35 +114,20 @@ final router = GoRouter(
           state.pathParameters['questionId'] == null ? '/home' : null,
     ),
     GoRoute(
-      path: '/view/grading/:answerId',
-      name: 'view-grading',
+      path: '/view/grading/by-answer/:answerId',
+      name: 'view-grading-by-answer',
       builder: (context, state) {
-        final answerId =
-            state.pathParameters['answerId'] ?? 'Missing answer Id';
-        return ViewGradingPage.fromAnswer(answerId: answerId);
-      },
-      redirect: (context, state) =>
-          state.pathParameters['gradingId'] == null ? '/home' : null,
-    ),
-    GoRoute(
-      path: '/view/grading/by-answer/:answerId', // Changed path
-      name: 'view-grading-by-answer', // Unique name
-      builder: (context, state) {
-        final answerId =
-            state.pathParameters['answerId'] ?? 'Missing answer Id';
-        // Consider error handling if 'answerId' is truly missing
-        // instead of defaulting to 'Missing answer Id'
+        final answerId = state.pathParameters['answerId']!;
         return ViewGradingPage.fromAnswer(answerId: answerId);
       },
       redirect: (context, state) =>
           state.pathParameters['answerId'] == null ? '/home' : null,
     ),
     GoRoute(
-      path: '/view/grading/by-id/:gradingId', // Changed path
-      name: 'view-grading-by-id', // Unique name
+      path: '/view/grading/by-id/:gradingId',
+      name: 'view-grading-by-id',
       builder: (context, state) {
-        final gradingId =
-            state.pathParameters['gradingId'] ?? 'Missing grading Id';
+        final gradingId = state.pathParameters['gradingId']!;
         return ViewGradingPage(gradingId: gradingId);
       },
       redirect: (context, state) =>
@@ -139,22 +138,19 @@ final router = GoRouter(
       path: "/answer:questionId",
       name: "answer",
       builder: (context, state) {
-        final questionId =
-            state.pathParameters['questionId'] ?? 'Missing question Id';
+        final questionId = state.pathParameters['questionId']!;
 
         return AnswerPage(questionId: questionId);
       },
       redirect: (context, state) =>
           state.pathParameters['questionId'] == null ? '/home' : null,
-
       routes: [
         GoRoute(
           path: 'standard',
           name: 'answer-standard',
 
           builder: (context, state) {
-            final questionId =
-                state.pathParameters['questionId'] ?? 'Missing question Id';
+            final questionId = state.pathParameters['questionId']!;
 
             return AnswerStandardPage(questionId: questionId);
           },
