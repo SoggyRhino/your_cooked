@@ -27,7 +27,6 @@ class ProfileService {
   ProfileState get state => _state;
 
   Future<void> initialize() async {
-    // Cancel existing subscription if any
     await _authSubscription?.cancel();
 
     _authSubscription = AuthenticationService().userStream.listen((user) async {

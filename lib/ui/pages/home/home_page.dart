@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:your_cooked/services/auth/auth_service.dart';
+import 'package:your_cooked/ui/pages/home/consitency_chart.dart';
+import 'package:your_cooked/ui/pages/home/profile_drawer.dart';
+import 'package:your_cooked/ui/pages/home/profile_icon.dart';
 import 'package:your_cooked/ui/pages/home/question_carousel.dart';
 
 import '../../../services/firestore/firestore_service.dart';
-import 'gradings_chart.dart';
+import 'discover_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -35,16 +38,40 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: [
-          _buildHomeWidget(),
-          const Center(child: Text('Discover')),
-        ][currentIndex],
-        transitionBuilder: (child, animation) =>
-            FadeTransition(opacity: animation, child: child),
-      ),
+      body: _buildBody(),
+      appBar: _buildAppbar(),
+      endDrawer: ProfileDrawer(),
       bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  AppBar _buildAppbar() {
+    return AppBar(
+      toolbarHeight: 80,
+      automaticallyImplyLeading: false,
+      actions: [
+        Builder(
+          builder: (context) => IconButton(
+            icon: ProfileIcon(),
+            onPressed: () => Scaffold.of(context).openEndDrawer(),
+          ),
+        ),
+      ],
+      title: Text("Your Cooked"),
+      centerTitle: true,
+    );
+  }
+
+  Widget _buildBody() {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: [
+        _buildHomeWidget(context),
+        Container(),
+        DiscoverPage(),
+      ][currentIndex],
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
     );
   }
 
@@ -57,34 +84,31 @@ class _HomePageState extends State<HomePage>
         BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Discover'),
       ],
       onTap: (index) {
-        switch (index) {
-          case 0:
-            setState(() => currentIndex = index);
-          case 1:
-            context.pushNamed('create-question');
-          case 2:
-            setState(() => currentIndex = 1);
+        if (index == 1) {
+          context.pushNamed('create-question');
+        } else {
+          setState(() => currentIndex = index);
         }
       },
       currentIndex: currentIndex,
     );
   }
 
-  Widget _buildHomeWidget() {
+  Widget _buildHomeWidget(BuildContext context) {
     return ListView(
       children: [
-        GradingsChart(
-          gradings: FirestoreService().streamUserGradings(userId: userId),
+        ConsistencyChart(
+          stream: FirestoreService().streamUserGradings(userId: userId),
         ),
         QuestionCarousel.fromHistory(
           label: "Recent Questions",
           historyStream: FirestoreService().streamHistory(userId: userId),
         ),
-        //todo fix carousel for user questions
         QuestionCarousel.fromQuestions(
           label: "Your Questions",
           questionsStream: FirestoreService().getQuestionsStream(
-              userId: userId),
+            userId: userId,
+          ),
         ),
       ],
     );

@@ -33,8 +33,9 @@ class _RegisterFormState extends State<RegisterForm> {
 
   Future<void> _handleRegister(_RegisterType type) async {
     if (_isLoading) return;
-    if (type == _RegisterType.email && !_formKey.currentState!.validate())
+    if (type == _RegisterType.email && !_formKey.currentState!.validate()) {
       return;
+    }
 
     setState(() {
       _isLoading = true;

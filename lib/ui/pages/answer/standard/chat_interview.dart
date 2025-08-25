@@ -96,7 +96,7 @@ class _ChatInterviewState extends State<ChatInterview> {
       history: session.history,
     );
 
-    if (result.isError()) {
+    if (result.isSuccess()) {
       final answerId = result.getOrThrow();
 
       setState(() {

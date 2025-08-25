@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -24,20 +26,40 @@ class ResultsList extends StatefulWidget {
 }
 
 class _ResultsListState extends State<ResultsList> {
-  late final Stream<List<Answer>> _answersStream;
-  late final Stream<List<Grading>> _gradingsStream;
+  final Map<String, dynamic> results = {};
+  late final StreamSubscription _answersSubscription;
+  late final StreamSubscription _gradingsSubscription;
 
   @override
   void initState() {
     super.initState();
-    _answersStream = FirestoreService().streamAnswers(
-      userId: widget.userId,
-      questionId: widget.questionId,
-    );
-    _gradingsStream = FirestoreService().streamGradings(
-      userId: widget.userId,
-      questionId: widget.questionId,
-    );
+    _answersSubscription = FirestoreService()
+        .streamAnswers(userId: widget.userId, questionId: widget.questionId)
+        .listen((answers) {
+          setState(() {
+            for (final answer in answers) {
+              results[answer.answerId!] = answer;
+            }
+          });
+        });
+    _gradingsSubscription = FirestoreService()
+        .streamGradings(userId: widget.userId, questionId: widget.questionId)
+        .listen((gradings) {
+          setState(() {
+            for (final grading in gradings) {
+              if (!results.containsKey(grading.answerId)) {
+                results[grading.answerId] = grading;
+              }
+            }
+          });
+        });
+  }
+
+  @override
+  void dispose() {
+    _answersSubscription.cancel();
+    _gradingsSubscription.cancel();
+    super.dispose();
   }
 
   @override
@@ -57,73 +79,21 @@ class _ResultsListState extends State<ResultsList> {
             ),
           ),
         ),
-        StreamBuilder<List<Answer>>(
-          stream: _answersStream,
-          builder: (context, answerSnapshot) {
-            if (answerSnapshot.hasError) {
-              return _buildError(
-                'Failed to load answers',
-                answerSnapshot.error.toString(),
-                theme,
-              );
-            }
-
-            if (answerSnapshot.connectionState == ConnectionState.waiting) {
-              return _buildLoading('Loading answers...', theme);
-            }
-
-            final answers = answerSnapshot.data;
-
-            if (answers == null || answers.isEmpty) {
-              return _buildEmptyState(theme);
-            }
-
-            return StreamBuilder<List<Grading>>(
-              stream: _gradingsStream,
-              builder: (context, gradingSnapshot) {
-                if (gradingSnapshot.hasError) {
-                  return _buildError(
-                    'Failed to load gradings',
-                    gradingSnapshot.error.toString(),
-                    theme,
-                  );
-                }
-
-                final gradings = gradingSnapshot.data ?? [];
-
-                // Sort answers by timestamp (newest first)
-                final sortedAnswers = List<Answer>.from(answers)
-                  ..sort((a, b) => (b.createdAt).compareTo(a.createdAt));
-
-                return _buildResultsList(sortedAnswers, gradings, theme);
-              },
-            );
-          },
-        ),
+        ...results.values
+            .sorted((a, b) => b.createdAt.compareTo(a.createdAt))
+            .map(
+              (result) => _buildResultCard(
+                (result is Answer ? result : null),
+                (result is Grading ? result : null),
+              ),
+            ),
       ],
     );
   }
 
-  Widget _buildResultsList(
-    List<Answer> answers,
-    List<Grading> gradings,
-    ThemeData theme,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final answer in answers)
-          _buildResultCard(
-            answer,
-            gradings.firstWhereOrNull((g) => g.answerId == answer.answerId),
-            theme,
-          ),
-      ],
-    );
-  }
-
-  Widget _buildResultCard(Answer answer, Grading? grading, ThemeData theme) {
+  Widget _buildResultCard(Answer? answer, Grading? grading) {
     final isGraded = grading != null;
+    final theme = Theme.of(context);
 
     return Card(
       elevation: 2,
@@ -137,7 +107,7 @@ class _ResultsListState extends State<ResultsList> {
           } else {
             context.pushNamed(
               'view-grading-by-answer',
-              pathParameters: {'answerId': answer.answerId!},
+              pathParameters: {'answerId': answer!.answerId!},
             );
           }
         },
@@ -163,7 +133,7 @@ class _ResultsListState extends State<ResultsList> {
                           ),
                         ),
                         Text(
-                          'Submitted ${createdAgo(answer.createdAt)}',
+                          'Submitted ${createdAgo(isGraded ? grading.createdAt : answer!.createdAt)}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -258,95 +228,6 @@ class _ResultsListState extends State<ResultsList> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLoading(String message, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(
-                theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildError(String title, String message, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: theme.colorScheme.error,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.assignment_outlined,
-              size: 60,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No submissions yet',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Your answers will appear here',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }

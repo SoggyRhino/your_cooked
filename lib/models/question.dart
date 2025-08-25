@@ -48,4 +48,17 @@ class Question {
       "userId": userId,
     };
   }
+
+  factory Question.fromHit(Map<String, dynamic> map) {
+    print(map);
+    return Question(
+      docId: map['objectID'],
+      questionText: map['questionText'],
+      answerText: map['answerText'],
+      tags: List<String>.from(map['tags']),
+      visibility: map['visibility'],
+      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
+      userId: map['userId'],
+    );
+  }
 }

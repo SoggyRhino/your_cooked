@@ -287,8 +287,8 @@ class FirestoreService {
     int limit = 20,
   }) {
     return _answerReference
-        .where('questionId', isEqualTo: questionId)
         .where('userId', isEqualTo: userId)
+        .where('questionId', isEqualTo: questionId)
         .orderBy('createdAt', descending: true)
         .limit(limit)
         .snapshots()

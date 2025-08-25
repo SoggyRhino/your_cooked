@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:result_dart/result_dart.dart';
 import 'package:your_cooked/services/ai/functions.dart';
@@ -20,7 +21,10 @@ class AiService {
     return _instance;
   }
 
-  final _vertexAI = FirebaseAI.vertexAI(auth: FirebaseAuth.instance);
+  final _vertexAI = FirebaseAI.vertexAI(
+    auth: FirebaseAuth.instance,
+    appCheck: FirebaseAppCheck.instance,
+  );
 
   GenerativeModel getInterviewModel() {
     return _vertexAI.generativeModel(

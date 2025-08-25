@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:your_cooked/ui/commons/pulse_load_animated_box.dart';
 
 import '../../../models/grading.dart';
 
@@ -170,10 +169,6 @@ class _GradingsChartState extends State<GradingsChart>
       child: StreamBuilder<List<Grading>>(
         stream: widget.gradings,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const PulseLoadAnimatedBox();
-          }
-
           if (snapshot.hasError) {
             return _buildErrorWidget(snapshot.error.toString());
           }

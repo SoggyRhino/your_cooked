@@ -1,6 +1,8 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:your_cooked/firebase_options.dart';
 import 'package:your_cooked/services/auth/auth_service.dart';
@@ -11,11 +13,26 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await FirebaseAppCheck.instance.activate(
-    //webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
-    androidProvider: AndroidProvider.debug,
-    //appleProvider: AppleProvider.appAttest,
-  );
+
+  if (kDebugMode) {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+    );
+  } else {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.playIntegrity,
+    );
+  }
+
+  FlutterError.onError = (errorDetails) {
+    FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
+
   await AuthenticationService().initialize();
   await ProfileService().initialize();
 
@@ -28,8 +45,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      theme: FlexThemeData.light(scheme: FlexScheme.deepBlue),
-      darkTheme: FlexThemeData.dark(scheme: FlexScheme.deepBlue),
+      theme: FlexThemeData.light(scheme: FlexScheme.blumineBlue),
+      darkTheme: FlexThemeData.dark(scheme: FlexScheme.blumineBlue),
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
