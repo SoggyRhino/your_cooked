@@ -7,14 +7,14 @@
 [![Vertex AI](https://img.shields.io/badge/Vertex-AI-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)](https://cloud.google.com/vertex-ai)
 
 
-## ✨ Features
+## Features
 
 *   **Instant AI Feedback:** Receive detailed grades and constructive feedback on your answers moments after you submit them.
 *   **Unlimited Practice:** Answer questions from other users or create your own to focus on specific areas.
 *   **Performance History:** Track your scores and review past answers to see how you've improved.
 
  
-## 🛠️ Built With
+## Built With
 
 This project is built with the following technologies:
 
@@ -29,7 +29,7 @@ Currently the app is in early development and it is not yet ready for the public
 
 This project is open sourced so if you wish to it would not be difficult to make it work with your own firebase account.
 
-## 🗺️ Roadmap
+## Roadmap
 
 Here are some of the features planned for the future:
 
@@ -42,7 +42,7 @@ Here are some of the features planned for the future:
 *   [ ] Support fort private questions (not visible to the public)
 *   [ ] A local-only fork using Delve and a user-provided API key
 
-## 📄 License
+## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
